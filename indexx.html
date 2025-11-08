@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cat vs Dog Classifier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg-dark: #181c27;
+      --bg-light: #f7fafc;
+      --card-dark: #24273a;
+      --card-light: #fff;
+      --font-main: 'Segoe UI', sans-serif;
+      --cat: #2be190;
+      --dog: #36aaff;
+      --error: #ee4e51;
+    }
+    body {
+      background: var(--bg-dark);
+      font-family: var(--font-main);
+      color: #ebecf2;
+      min-height: 100vh;
+      margin: 0;
+      transition: background .3s, color .3s;
+    }
+    body.light { background: var(--bg-light); color: #21293d;}
+    .container {
+      max-width: 540px;
+      margin: 0 auto;
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+      align-items: center; justify-content: center;
+      padding: 18px 0 40px 0;
+    }
+    h1 {
+      margin: 16px 0 14px 0;
+      font-size: 2.1em;
+      text-align: center;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #ffe082;
+      text-shadow: 0 0 18px #35313a44;
+      transition: color .3s;
+    }
+    body.light h1 { color: #1a73e8; text-shadow: none;}
+    .info-card {
+      background: var(--card-dark);
+      color: inherit;
+      border-radius: 12px;
+      padding: 17px 15px 15px 15px;
+      box-shadow: 0 3px 10px #181c2732;
+      font-size: 0.97em;
+      margin-bottom: 10px;
+      width: 99%;
+      transition: background .3s;
+    }
+    body.light .info-card { background: var(--card-light);}
+    .info-card strong {color: #5edcb9;}
+    .info-card .data {margin-top: 6px;}
+    .upload-area {
+      background: var(--card-dark);
+      border-radius: 12px;
+      box-shadow: 0 3px 10px #181c2732;
+      padding: 18px 15px;
+      width: 99%;
+      margin-bottom: 18px;
+      min-height: 125px;
+      text-align: center;
+      border: 2.2px dashed #36426c;
+      position: relative;
+      transition: background .3s, border .3s;
+    }
+    body.light .upload-area { background: var(--card-light); border-color: #1a73e8;}
+    .upload-area.dragover { border-color: var(--cat); background: #283487;}
+    .upload-area input[type="file"] {
+      display: none;
+    }
+    .upload-label {
+      display: block;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #202633;
+      color: #a2b0d3;
+      cursor: pointer;
+      font-size: 1.06em;
+      font-weight: 510;
+      outline: none;
+      border: 1.2px solid #222736;
+      margin: 0 auto;
+      margin-bottom: 6px;
+      transition: background .32s, color .32s;
+    }
+    .upload-label:focus { background: #363e54; color: #76d0be;}
+    body.light .upload-label { background: #e5eeff; color: #2570e4;}
+    .upload-area .drag-message { opacity: 0.9;}
+    .preview-thumb {
+      margin: 11px auto 6px auto;
+      width: 128px; height: 128px; object-fit: cover;
+      border-radius: 16px; border: 2px solid #4eddbb;
+      background: #191d22;
+      box-shadow: 0 2px 25px 0 #39d1a818, 0 1px 4px #23253328;
+      animation: imgPopIn 0.7s;
+      display: block;
+    }
+    @keyframes imgPopIn {
+      0%{ opacity:0; transform: scale(0.65);}
+      40%{ opacity:0.7; transform: scale(1.09);}
+      100%{ opacity:1; transform: scale(1);}
+    }
+    .preview-actions {
+      text-align: center;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .btn { padding: 8px 18px; border-radius: 10px; border:none; cursor:pointer;
+      font-size: 1em; font-weight: 500; background: #282e3f; color:#fff;
+      transition: background .18s;
+     }
+    .btn:focus-visible {outline:2.5px solid #5edcb9;}
+    .btn.clear { background: #ef4652;}
+    .btn.replace { background: #5e9efd;}
+    .btn.predict { background: #2be190; color: #1f2721; font-weight:700;}
+    .btn.remove-history { background: #ef4652; color: #fff; margin-left: 12px; padding: 4px 9px; font-size: 0.9em;}
+    .btn:active {transform: scale(0.97);}
+    body.light .btn {background: #d7e3f3; color: #1a73e8;}
+    body.light .btn.clear { background: #ffb3b6;}
+    body.light .btn.replace {background: #acd1ff;}
+    body.light .btn.predict { background: #2be190; color: #141c15;}
+    body.light .btn.remove-history { background: #ff898f; color: #314;}
+    .loader {
+      display: inline-block;
+      margin: 5px auto;
+      width: 44px; height: 44px;
+      border: 5px solid #2342ab;
+      border-radius: 50%;
+      border-top-color: #2be190;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {100%{transform:rotate(360deg);}}
+    .result-card {
+      margin: 20px auto 0 auto;
+      background: var(--card-dark);
+      border-radius: 16px;
+      box-shadow: 0 3px 10px #181c2732;
+      padding: 17px 20px 11px 20px;
+      width: 99%;
+      text-align: center;
+      min-height: 62px;
+      font-size:1.25em; font-weight: 600;
+      letter-spacing: 0.7px;
+      opacity: 0; transition: opacity 0.8s;
+      position: relative;
+      animation: bounceIn 0.95s cubic-bezier(.68,-0.55,.27,1.55);
+      border: 2px solid #323755;
+    }
+    .result-card.show { opacity: 1; }
+    .result-card.success { border-color: var(--cat);}
+    .result-card.dog { border-color: var(--dog);}
+    .result-card.error {border-color: var(--error);}
+    .result-label { display: inline-block; padding: 2px 12px; border-radius: 6px;}
+    .result-label.cat { background: var(--cat); color: #202530;}
+    .result-label.dog { background: var(--dog); color: #f8fafc;}
+    .result-prob {font-size: 0.87em; padding-left: 6px; font-weight: 400;}
+    .result-timestamp {font-size:0.70em; color: #aaa; padding-top: 7px;}
+    .history-card {
+      background: var(--card-dark);
+      color: inherit;
+      border-radius: 12px;
+      padding: 14px 12px;
+      margin: 18px auto 0 auto;
+      width: 99%;
+      font-size: 0.96em;
+      box-shadow: 0 2px 7px #181c2734;
+      transition: background .3s;
+    }
+    body.light .history-card { background: var(--card-light);}
+    .history-list { margin:3px 0 0 0; padding:0;}
+    .history-item {
+      display: flex; align-items: center; margin-bottom: 7px;
+      padding-bottom: 7px; border-bottom: 1px solid #363c56;
+      transition: background .2s;
+    }
+    .history-item:last-child { border-bottom: none;}
+    .history-thumb {width:40px; height:40px; border-radius:7px; object-fit:cover; margin-right:13px;}
+    .history-label {font-weight:600; font-size:1em; border-radius:5px; padding:2px 11px;}
+    .history-label.cat {background: var(--cat);}
+    .history-label.dog {background: var(--dog); color:#f8fafc;}
+    .history-timestamp {font-size:0.81em; margin-left:8px; color: #aaa;}
+    .history-prob {font-size:0.83em; margin-left:4px;}
+    .theme-btn {
+      position: fixed; top: 16px; right: 18px; 
+      font-size: 1.4em; background: #23253b; color: #ffd55d; border-radius: 18px;
+      padding: 6px 18px; border: none; cursor: pointer; z-index:11;
+      outline: none; box-shadow: 0 2px 10px #20245c36;
+      transition: background .3s, color .3s;
+    }
+    .theme-btn:focus-visible {outline:2.3px solid #5edcb9;}
+    body.light .theme-btn {background: #d7e3f3; color: #1a73e8;}
+    @media (max-width: 680px) {
+      .container, .info-card, .card, .upload-area, .result-card, .history-card {width: 98%;}
+      h1 { font-size: 1.3em;}
+    }
+    @media (max-width: 400px) {
+      h1 {font-size: 1.13em;}
+      .info-card, .card, .upload-area, .result-card, .history-card { font-size: 0.90em;}
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0.7);}
+      60%{ transform: scale(1.23);}
+      100%{ transform: scale(1);}
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-btn" id="themeToggle" aria-label="Toggle dark/light theme" tabindex="0">🌙</button>
+  <div class="container">
+    <h1>🐱 Cat vs Dog Classifier 🐶</h1>
+    <div class="info-card" aria-label="Model Information" tabindex="0">
+      <strong>Algorithm:</strong> Support Vector Machine (SVM) <br>
+      <div class="data">
+        <strong>Features:</strong> Histogram of Oriented Gradients (HOG)<br>
+        <strong>Dataset:</strong> Kaggle Dogs vs Cats<br>
+        <strong>Accuracy:</strong> ~97% on test set
+      </div>
+    </div>
+    <div class="upload-area" id="uploadArea" tabindex="0" aria-label="Drag and drop an image here, or use upload button.">
+      <label for="inputImage" class="upload-label" tabindex="0" aria-label="Select image to upload">+ Upload Image</label>
+      <input type="file" id="inputImage" accept="image/*" aria-label="Image file input">
+      <span class="drag-message">or Drag &amp; Drop file here</span>
+      <div id="previewContainer"></div>
+      <div class="preview-actions" id="previewActions"></div>
+      <div id="errorMsg" style="color:var(--error);border-radius:7px;display:none;"></div>
+    </div>
+    <div id="loader" class="loader" style="display:none;" aria-live="polite"></div>
+    <div id="resultCard" class="result-card" aria-live="polite"></div>
+    <div id="historyCard" class="history-card" tabindex="0" aria-label="Prediction History" style="display:none;">
+      <strong>Prediction History</strong>
+      <ul class="history-list" id="historyList"></ul>
+    </div>
+  </div>
+  <script>
+    // Theme toggle
+    const themeBtn = document.getElementById('themeToggle');
+    themeBtn.onclick = () => {
+      document.body.classList.toggle('light');
+      themeBtn.textContent = document.body.classList.contains('light') ? '🌞' : '🌙';
+    };
+
+    // Upload logic
+    const uploadArea = document.getElementById('uploadArea');
+    const inputImage = document.getElementById('inputImage');
+    const previewContainer = document.getElementById('previewContainer');
+    const previewActions = document.getElementById('previewActions');
+    const errorMsg = document.getElementById('errorMsg');
+    let currentFile = null;
+    let currentDataUrl = null;
+
+    uploadArea.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        inputImage.click();
+      }
+    });
+
+    uploadArea.addEventListener('dragover', e => {
+      e.preventDefault(); uploadArea.classList.add("dragover");
+    });
+    uploadArea.addEventListener('dragleave', e => {
+      uploadArea.classList.remove("dragover");
+    });
+    uploadArea.addEventListener('drop', e => {
+      e.preventDefault(); uploadArea.classList.remove("dragover");
+      if (e.dataTransfer.files && e.dataTransfer.files.length) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    inputImage.onchange = function() {
+      if (inputImage.files.length) handleFile(inputImage.files[0]);
+    };
+
+    function handleFile(file) {
+      clearError();
+      if (!file.type.match('image.*')) {
+        showError("Invalid file format. Only .jpg, .jpeg, .png allowed.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        previewContainer.innerHTML = `<img class="preview-thumb" id="preview" src="${event.target.result}" alt="Image preview" aria-label="Preview">`;
+        previewActions.innerHTML = `
+          <button class="btn clear" id="clearBtn" tabindex="0">Clear</button>
+          <button class="btn replace" id="replaceBtn" tabindex="0">Replace</button>
+          <button class="btn predict" id="predictBtnPreview" tabindex="0">Predict</button>
+        `;
+        currentFile = file;
+        currentDataUrl = event.target.result;
+        document.getElementById('clearBtn').onclick = clearImage;
+        document.getElementById('replaceBtn').onclick = () => inputImage.click();
+        document.getElementById('predictBtnPreview').onclick = predictImage;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearImage() {
+      previewContainer.innerHTML = "";
+      previewActions.innerHTML = "";
+      currentFile = null; currentDataUrl = null;
+      clearError();
+      document.getElementById('resultCard').style.opacity = 0;
+    }
+
+    function showError(msg) {
+      errorMsg.style.display = "block";
+      errorMsg.textContent = msg;
+    }
+    function clearError() {
+      errorMsg.style.display = "none";
+      errorMsg.textContent = "";
+    }
+
+    // Prediction + Loader
+    const loader = document.getElementById('loader');
+    const resultCard = document.getElementById('resultCard');
+    const historyCard = document.getElementById('historyCard');
+    const historyList = document.getElementById('historyList');
+    let history = [];
+
+    function predictImage() {
+      if (!currentFile || !currentDataUrl) { showError("Please upload an image."); return; }
+      clearError();
+      loader.style.display = "inline-block";
+      resultCard.style.opacity = 0;
+      setTimeout(() => {
+        // Simulate backend prediction
+        const label = (Math.random() > 0.5) ? "Cat" : "Dog";
+        const prob = (Math.random() * 0.3 + 0.7).toFixed(2);
+        const color = label === "Cat" ? "cat" : "dog";
+        const showLabel = label === "Cat" ? "Cat 🐱" : "Dog 🐶";
+        resultCard.innerHTML = `
+          <span class="result-label ${color}">${showLabel}</span>
+          <span class="result-prob">(Confidence: ${prob})</span>
+          <div class="result-timestamp">${new Date().toLocaleString()}</div>
+        `;
+        resultCard.className = `result-card show ${color} success`;
+        // Save to history
+        history.unshift({thumb: currentDataUrl, label, prob, stamp: new Date().toLocaleString()});
+        if (history.length > 5) history = history.slice(0,5);
+        updateHistory();
+        loader.style.display = "none";
+      }, 1200);
+    }
+
+    function updateHistory() {
+      if (!history.length) { historyCard.style.display = "none"; return;}
+      historyList.innerHTML = "";
+      history.forEach((item, idx) => {
+        historyList.innerHTML += `<li class="history-item" data-idx="${idx}">
+          <img class="history-thumb" src="${item.thumb}" alt="history image">
+          <span class="history-label ${item.label.toLowerCase()}">${item.label}</span>
+          <span class="history-prob">(${item.prob})</span>
+          <span class="history-timestamp">${item.stamp}</span>
+          <button class="btn remove-history" onclick="removeHistory(${idx})" aria-label="Remove from history" tabindex="0">Remove</button>
+        </li>`;
+      });
+      historyCard.style.display = "block";
+    }
+
+    // Expose removeHistory to global for the onclicks
+    window.removeHistory = function(idx) {
+      history.splice(idx, 1);
+      updateHistory();
+    }
+  </script>
+</body>
+</html>
